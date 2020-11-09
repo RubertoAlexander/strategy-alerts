@@ -5,27 +5,37 @@ import csv
 
 from StrategyBuilder import StrategyBuilder
 from Stock import Stock
-from watchlist import watchlist
+from watchlist import watchlists
+from Evaluator import Evaluator
 
 class System:
     
     #Class Variables
     RUN_DAILY = True
+    SORT_BY_PERF = True
     PERIOD = '1mo' #1d, 1mo, 3mo, 6mo, 1y
     INTERVAL = '1d'
 
     runningDate = ''
+    buyList = []
+    sellList = []
 
     def run(self):
     
         stratBuilder = StrategyBuilder()
+        evaluator = Evaluator()
 
         listNum = 0
-        for stockList in watchlist:
+        for watchlist in watchlists:
+
             listNum += 1
             print('\nWatchlist', listNum)
+
             #Retrieve stock data
-            tickers = self.getStocks(stockList)
+            tickers = self.getStocks(watchlist)
+
+            if self.SORT_BY_PERF: 
+                tickers = evaluator.run(interval=self.INTERVAL, stocks=tickers, strat=stratBuilder.Strategy1)
 
             i = 14 #Start at 14 to retrieve indicator data
             #Loop through each day
@@ -43,28 +53,29 @@ class System:
                         stratResult = stratBuilder.Strategy1(stock, i)
                         
                         if stratResult == 'Buy':
-                            print(self.runningDate, 'Buy', stock.code)
-                            #append to dict to buy
-                            #self.buy(stock, stock.closeList[i], 1)
+                            #append to list to buy
+                            self.buyList.append([self.runningDate, stock.code])
                         elif (stratResult == 'Sell'):
-                            # self.toPurchase.remove(stock)
-                            print(self.runningDate, 'Sell', stock.code)
-                            #append to dict to sell
-                            # self.sell(stock, stock.closeList[i], 1)
+                            #append to list to sell
+                            self.sellList.append([self.runningDate, stock.code])
                 i+=1
 
-            # print('Buys: ', self.buyCount, '\n', 'Sells: ', self.sellCount)
-            # print('Capital:', self.capital)
+            print('Buy:')
+            for stock in self.buyList:
+                print(stock[0], stock[1])
 
-            # write dict to email and send off
+            print('Sell:')
+            for stock in self.sellList:
+                print(stock[0], stock[1])
 
-            # self.writeCSV()
+            self.buyList.clear()
+            self.sellList.clear()
 
-    def getStocks(self, stockList):
+    def getStocks(self, watchlist):
         print('Retrieving Data...')
         stocks = []
         dailyData = yf.download(
-            tickers=stockList,
+            tickers=watchlist,
             # start='2019-01-01',
             # end='2019-12-30',
             period=self.PERIOD,
@@ -72,7 +83,7 @@ class System:
             group_by='ticker'
         )
     
-        for stock in stockList:
+        for stock in watchlist:
             ticker = Stock(stock)
             stocks.append(ticker)
             #Get daily data
