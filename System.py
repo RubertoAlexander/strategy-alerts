@@ -2,6 +2,7 @@ import pandas as pd
 import yfinance as yf
 import datetime
 import csv
+import Emailer as Emailer
 
 from StrategyBuilder import StrategyBuilder
 from Stock import Stock
@@ -67,6 +68,8 @@ class System:
             print('Sell:')
             for stock in self.sellList:
                 print(stock[0], stock[1])
+
+            Emailer.send(watchlist, self.buyList, self.sellList)
 
             self.buyList.clear()
             self.sellList.clear()
